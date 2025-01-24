@@ -22,4 +22,18 @@ interface MessageDao {
 
     @Query("SELECT COUNT(*) FROM messages WHERE userFeedback = :feedback")
     suspend fun getCountByUserFeedback(feedback: String): Int
+
+    @Query("SELECT COUNT(*) FROM messages WHERE userFeedback IS NOT NULL")
+    suspend fun getCommentedMessagesCount(): Int
+
+    @Query("""
+        SELECT * FROM messages 
+        WHERE userFeedback IS NOT NULL 
+        ORDER BY receivedDate ASC 
+        LIMIT :limit
+    """)
+    suspend fun getMessagesForSync(limit: Int): List<Message>
+
+    @Query("DELETE FROM messages WHERE id = :messageId")
+    suspend fun deleteMessage(messageId: Long)
 }

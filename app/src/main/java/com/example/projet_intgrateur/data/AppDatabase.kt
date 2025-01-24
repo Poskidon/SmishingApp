@@ -2,9 +2,9 @@ package com.example.projet_intgrateur.data
 
 import android.content.Context
 import androidx.room.*
-import java.util.*
+import java.util.Date
 
-@Database(entities = [Message::class], version = 1)
+@Database(entities = [Message::class], version = 2)
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun messageDao(): MessageDao
@@ -19,7 +19,10 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "sms_analysis_database"
-                ).build()
+                )
+                    .addTypeConverter(Converters())
+                    .fallbackToDestructiveMigration()
+                    .build()
                 INSTANCE = instance
                 instance
             }
@@ -27,6 +30,7 @@ abstract class AppDatabase : RoomDatabase() {
     }
 }
 
+@ProvidedTypeConverter
 class Converters {
     @TypeConverter
     fun fromTimestamp(value: Long?): Date? {

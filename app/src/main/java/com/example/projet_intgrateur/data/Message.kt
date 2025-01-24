@@ -13,5 +13,6 @@ data class Message(
     val modelPrediction: String, // "ham" ou "phishing"
     val userFeedback: String?, // "ham" ou "phishing" ou null
     val receivedDate: Date,
-    val lastModifiedDate: Date
+    val lastModifiedDate: Date,
+    val syncStatus: String = "PENDING"
 )

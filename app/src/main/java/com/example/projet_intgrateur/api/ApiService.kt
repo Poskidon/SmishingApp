@@ -13,3 +13,17 @@ interface ApiService {
     @POST("predict")
     suspend fun analyzeSms(@Body request: SmsRequest): Response<String>
 }
+
+interface FeedbackService {
+    @Headers(
+        "Content-Type: application/json",
+        "Accept: application/json"
+    )
+    @POST("add_messages")
+    suspend fun syncFeedback(@Body feedback: FeedbackBatch): Response<Unit>
+}
+
+data class FeedbackBatch(
+    val messages: List<String>,
+    val labels: List<Int>
+)

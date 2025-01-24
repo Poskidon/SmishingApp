@@ -1,6 +1,6 @@
 // SmsReceiver.kt
 package com.example.projet_intgrateur
-
+import com.example.projet_intgrateur.data.sync.MessageSyncManager
 import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -99,7 +99,11 @@ class SmsReceiver : BroadcastReceiver() {
         prediction: String
     ): Long {
         return try {
-            val repository = MessageRepository(AppDatabase.getDatabase(context).messageDao())
+            val database = AppDatabase.getDatabase(context)
+            val messageDao = database.messageDao()
+            val syncManager = MessageSyncManager(messageDao)
+            val repository = MessageRepository(messageDao, syncManager)
+
             repository.insertMessage(
                 sender = sender,
                 content = content,
@@ -116,11 +120,13 @@ class SmsReceiver : BroadcastReceiver() {
         val messageContent = intent.getStringExtra(EXTRA_MESSAGE_CONTENT) ?: ""
         val sender = intent.getStringExtra(EXTRA_SENDER) ?: ""
 
-        Log.d(TAG, "Feedback reçu pour message $messageId: ${if (isPhishing) "phishing" else "ham"}")
-
         scope.launch {
             try {
-                val repository = MessageRepository(AppDatabase.getDatabase(context).messageDao())
+                val database = AppDatabase.getDatabase(context)
+                val messageDao = database.messageDao()
+                val syncManager = MessageSyncManager(messageDao)
+                val repository = MessageRepository(messageDao, syncManager)
+
                 repository.updateUserFeedback(messageId, if (isPhishing) "phishing" else "ham")
 
                 Log.d(TAG, "Feedback enregistré pour message $messageId")

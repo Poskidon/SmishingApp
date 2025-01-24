@@ -1,4 +1,5 @@
 package com.example.projet_intgrateur
+import com.example.projet_intgrateur.data.sync.MessageSyncManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import android.Manifest
@@ -47,6 +48,7 @@ class MainActivity : ComponentActivity() {
     private val resultType = mutableStateOf<ResultType?>(null)
     private val selectedTab = mutableIntStateOf(0)
     private lateinit var messageRepository: MessageRepository
+    private lateinit var syncManager: MessageSyncManager
     private val messages = mutableStateOf<List<Message>>(emptyList())
 
     enum class ResultType {
@@ -69,9 +71,11 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: android.os.Bundle?) {
         super.onCreate(savedInstanceState)
         val database = AppDatabase.getDatabase(applicationContext)
-        messageRepository = MessageRepository(database.messageDao())
+        val messageDao = database.messageDao()
+        syncManager = MessageSyncManager(messageDao)
+        messageRepository = MessageRepository(messageDao, syncManager)
 
-
+        setupSync()
         checkAndRequestPermissions()
 
         setContent {
@@ -114,7 +118,6 @@ class MainActivity : ComponentActivity() {
                                     onClick = { selectedTab.intValue = 2 },
                                     text = { Text("Statistiques") }
                                 )
-
                             }
                         }
                     }
@@ -148,6 +151,19 @@ class MainActivity : ComponentActivity() {
                                 .padding(paddingValues)
                         )
                     }
+                }
+            }
+        }
+    }
+
+    private fun setupSync() {
+        lifecycleScope.launch(Dispatchers.IO) {
+            while(true) {
+                try {
+                    syncManager.syncMessages()
+                    delay(30 * 60 * 1000)
+                } catch (e: Exception) {
+                    Log.e("MainActivity", "Erreur lors de la synchronisation périodique", e)
                 }
             }
         }

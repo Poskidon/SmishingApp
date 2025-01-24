@@ -3,8 +3,12 @@ package com.example.projet_intgrateur.data
 import android.util.Log
 import kotlinx.coroutines.flow.Flow
 import java.util.*
+import com.example.projet_intgrateur.data.sync.MessageSyncManager
 
-class MessageRepository(private val messageDao: MessageDao) {
+class MessageRepository(
+    private val messageDao: MessageDao,
+    private val syncManager: MessageSyncManager
+) {
     val allMessages: Flow<List<Message>> = messageDao.getAllMessages()
 
     suspend fun insertMessage(
@@ -34,6 +38,10 @@ class MessageRepository(private val messageDao: MessageDao) {
                     lastModifiedDate = Date()
                 )
             )
+
+            if (messageDao.getCommentedMessagesCount() >= 20) {
+                syncManager.syncMessages()
+            }
         }
     }
 
