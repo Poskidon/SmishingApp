@@ -9,7 +9,7 @@ import kotlinx.coroutines.withContext
 
 class MessageSyncManager(
     private val messageDao: MessageDao,
-    private val threshold: Int = 1
+    private val threshold: Int = 20
 ) {
     private val TAG = "MessageSyncManager"
 
