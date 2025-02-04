@@ -1,4 +1,8 @@
 package com.example.projet_intgrateur
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.isActive
 import com.example.projet_intgrateur.data.sync.MessageSyncManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -41,6 +45,7 @@ import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 class MainActivity : ComponentActivity() {
+    private var syncJob: Job? = null
     private val inputText = mutableStateOf("")
     private val smsAnalyzer = SmsAnalyzer()
     private val analysisResult = mutableStateOf<String?>(null)
@@ -157,16 +162,34 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun setupSync() {
-        lifecycleScope.launch(Dispatchers.IO) {
-            while(true) {
-                try {
-                    syncManager.syncMessages()
-                    delay(30 * 60 * 1000)
-                } catch (e: Exception) {
-                    Log.e("MainActivity", "Erreur lors de la synchronisation périodique", e)
+        syncJob?.cancel() // Annule le job précédent s'il existe
+
+        syncJob = lifecycleScope.launch(Dispatchers.IO + SupervisorJob()) {
+            try {
+                while (isActive) { // Vérifie si la coroutine est toujours active
+                    try {
+                        syncManager.syncMessages()
+                        delay(30 * 60 * 1000) // 30 minutes
+                    } catch (e: Exception) {
+                        when (e) {
+                            is CancellationException -> throw e // Relance l'exception d'annulation
+                            else -> {
+                                Log.e("MainActivity", "Erreur de synchronisation", e)
+                                delay(60_000) // Attend 1 minute avant de réessayer
+                            }
+                        }
+                    }
                 }
+            } catch (e: CancellationException) {
+                Log.d("MainActivity", "Synchronisation arrêtée")
+            } finally {
+                // Nettoyage si nécessaire
             }
         }
+    }
+    override fun onDestroy() {
+        super.onDestroy()
+        syncJob?.cancel() // Annule proprement le job lors de la destruction de l'Activity
     }
 
     @Composable
